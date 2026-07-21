@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -24,6 +24,9 @@ class TaskCreate(BaseModel):
         if not v or not v.strip():
             raise ValueError("title must not be empty")
         return v.strip()
+
+class TaskUpdate(TaskCreate):
+    pass
 
 def find_task(task_id: int):
     return next((t for t in tasks if t["id"] == task_id), None)
@@ -54,6 +57,23 @@ def create_task(payload: TaskCreate):
     tasks.append(new_task)
     next_id += 1
     return new_task
+
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, payload: TaskUpdate):
+    task = find_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    task["title"] = payload.title
+    task["done"] = payload.done
+    return task
+
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id: int):
+    task = find_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    tasks.remove(task)
+    return None
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
