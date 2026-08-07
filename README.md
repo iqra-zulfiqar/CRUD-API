@@ -56,7 +56,7 @@ Opened tasks.db in DB Browser for SQLite and ran:
 
 SELECT * FROM tasks WHERE done = 1;
 
-![Database Query Screenshot](images/db-query.png)
+![Database Query Screenshot](db-query.png)
 
 
 
@@ -68,7 +68,7 @@ All tasks, including ones created through the API:
 
 Query filtering for completed tasks only:
 
-![Database Browser Screenshot](images/db-browse-screenshot.png)
+![Database Browser Screenshot](db-browser-screenshot.png)
 
 ## Swagger UI
 
