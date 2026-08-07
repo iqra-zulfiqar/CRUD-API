@@ -59,7 +59,6 @@ SELECT * FROM tasks WHERE done = 1;
 ![Database Query Screenshot](db-query.png)
 
 
-
 This returned only the completed task ("Push to GitHub"), confirming the done column correctly filters completed vs. open tasks.
 
 # Database viewer screenshots
@@ -78,3 +77,8 @@ Full endpoint overview:
 Example of a live request/response via "Try it out":
 ![Swagger UI CRUD example](swagger-execute.png)
 ![Swagger UI CRUD example](swagger-execute1.png)
+
+
+# What I noticed
+
+Restarting the server no longer resets my tasks back to just the 3 originals, the database only seeds those 3 tasks the very first time the table is empty. After that, whatever I create or delete stays that way across restarts, which is the whole point of this assignment: the API stayed identical, but swapping the storage layer to SQLite gave it real persistence.
