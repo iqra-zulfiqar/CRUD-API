@@ -27,19 +27,18 @@ Then open:
 
 On first run, tasks.db is created automatically with a tasks table and 3 seeded example tasks. On every later run, the existing data is reused, the 3 examples are only inserted once, when the table is empty.
 
+
 ## Endpoints
 
-| Method | Path            | Description                          | Success | Errors           |
-|--------|-----------------|---------------------------------------|---------|-------------------|
-| GET    | `/`             | API info                              | 200     | —                 |
-| GET    | `/health`       | Health check                          | 200     | —                 |
-| GET    | `/tasks`        | List all tasks (`?done=`, `?search=` filters) | 200     | —                 |
-| GET    | `/tasks/{id}`   | Get one task                          | 200     | 404 unknown id    |
-| POST   | `/tasks`        | Create a task (`{"title": "..."}`)    | 201     | 400 missing/empty title |
-| PUT    | `/tasks/{id}`   | Replace a task's title/done           | 200     | 400 invalid body, 404 unknown id |
-| DELETE | `/tasks/{id}`   | Delete a task                         | 204     | 404 unknown id    |
-| GET    | `/stats`        | `{ "total", "done", "open" }`         | 200     | —                 |
-| POST   | `/reset`        | Reset to the 3 example tasks          | 200     | —                 |
+| Method | Path | Description | Success | Errors |
+|--------|------|-------------|:-------:|--------|
+| GET | `/` | API info | 200 | — |
+| GET | `/health` | Health check | 200 | — |
+| GET | `/tasks` | List all tasks | 200 | — |
+| GET | `/tasks/{id}` | Get one task | 200 | 404 unknown id |
+| POST | `/tasks` | Create a task (`{"title": "..."}`) | 201 | 400 missing/empty title |
+| PUT | `/tasks/{id}` | Replace a task's title and `done` status | 200 | 400 invalid body, 404 unknown id |
+| DELETE | `/tasks/{id}` | Delete a task | 204 | 404 unknown id |
 
 
 # Persistence proof
