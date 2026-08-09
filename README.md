@@ -2,7 +2,7 @@
 
 A CRUD API for managing a to-do list, built with Python + FastAPI, running in Docker with a real PostgreSQL database. The app and database start together with a single command: docker compose up.
 
-This builds directly on A2 (SQLite): the API — routes, validation, status codes, error format — has not changed at all. Only the storage layer underneath it was swapped, from SQLite to a Postgres repository, proving that "switch storage" really does mean changing one file, not rewriting the app.
+This builds directly on A2 (SQLite): the API, routes, validation, status codes, error format has not changed at all. Only the storage layer underneath it was swapped, from SQLite to a Postgres repository, proving that "switch storage" really does mean changing one file, not rewriting the app.
 
 
 ## Architecture
@@ -37,17 +37,17 @@ To stop everything: docker compose down. This removes the containers but not the
 
 # Environment variables
 
-The connection string lives in .env, which is gitignored and never committed — it's the kind of file that can end up holding real credentials. A committed .env.example documents what's needed instead:
+The connection string lives in .env, which is gitignored and never committed, it's the kind of file that can end up holding real credentials. A committed .env.example documents what's needed instead:
 
 DATABASE_URL=postgresql://taskuser:taskpass@db:5432/taskdb
 
-Inside Docker Compose, the app reaches Postgres via the service name db — Compose creates an internal network where db resolves to the Postgres container. This is different from running things locally, where you'd use localhost.
+Inside Docker Compose, the app reaches Postgres via the service name db, Compose creates an internal network where db resolves to the Postgres container. This is different from running things locally, where you'd use localhost.
 
 ## Database setup
 
-Postgres runs in Docker with a named volume (pgdata) mounted at /var/lib/postgresql/data. This is what makes data outlive the container itself — removing or rebuilding the db container doesn't touch the volume.
+Postgres runs in Docker with a named volume (pgdata) mounted at /var/lib/postgresql/data. This is what makes data outlive the container itself, removing or rebuilding the db container doesn't touch the volume.
 
-The tasks table is created by init.sql, mounted into Postgres's docker-entrypoint-initdb.d/ folder. The official Postgres image only runs scripts in that folder once — the very first time the container starts with an empty volume — which is also what guarantees the 3 example tasks are seeded exactly once, never duplicated on later restarts.
+The tasks table is created by init.sql, mounted into Postgres's docker-entrypoint-initdb.d/ folder. The official Postgres image only runs scripts in that folder once, the very first time the container starts with an empty volume, which is also what guarantees the 3 example tasks are seeded exactly once, never duplicated on later restarts.
 
 ## Endpoints
 
@@ -77,7 +77,7 @@ New: Dockerfile, docker-compose.yml, .env, .env.example
 main.py — every route, every status code, both exception handlers
 The TaskCreate / TaskUpdate Pydantic models and validation rules
 The {"error": "..."} error response shape
-The API's external behavior — a client sending requests can't tell the difference
+The API's external behavior, a client sending requests can't tell the difference
 
 ## Persistence proof
 
@@ -89,4 +89,4 @@ How I checked, exactly:
 4. docker compose up — stack starts fresh from the existing volume
 5. GET /tasks — all 4 tasks still present, including "Learn Docker"
 
-This confirms persistence across a full app + container restart, not just an app-level restart like the SQLite version proved. The data survives because it lives in the named volume pgdata, which exists independently of the containers — deleting and recreating the containers never touches it.
+This confirms persistence across a full app + container restart, not just an app-level restart like the SQLite version proved. The data survives because it lives in the named volume pgdata, which exists independently of the containers, deleting and recreating the containers never touches it.
