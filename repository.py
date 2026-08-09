@@ -1,8 +1,9 @@
+
 from typing import Optional
- 
+
 from db import get_connection
- 
- 
+
+
 def list_tasks() -> list[dict]:
     conn = get_connection()
     try:
@@ -11,8 +12,8 @@ def list_tasks() -> list[dict]:
             return [dict(row) for row in cur.fetchall()]
     finally:
         conn.close()
- 
- 
+
+
 def get_task(task_id: int) -> Optional[dict]:
     conn = get_connection()
     try:
@@ -24,8 +25,8 @@ def get_task(task_id: int) -> Optional[dict]:
             return dict(row) if row else None
     finally:
         conn.close()
- 
- 
+
+
 def create_task(title: str, done: bool = False) -> dict:
     conn = get_connection()
     try:
@@ -43,8 +44,8 @@ def create_task(title: str, done: bool = False) -> dict:
             return dict(row)
     finally:
         conn.close()
- 
- 
+
+
 def update_task(task_id: int, title: str, done: bool) -> Optional[dict]:
     conn = get_connection()
     try:
@@ -63,8 +64,8 @@ def update_task(task_id: int, title: str, done: bool) -> Optional[dict]:
             return dict(row) if row else None
     finally:
         conn.close()
- 
- 
+
+
 def delete_task(task_id: int) -> bool:
     conn = get_connection()
     try:
@@ -75,4 +76,3 @@ def delete_task(task_id: int) -> bool:
             return deleted
     finally:
         conn.close()
- 
