@@ -1,83 +1,92 @@
-# Task CRUD API
+## Task CRUD API
 
-A CRUD API for managing a to-do list, built with Python + FastAPI, now backed by a real SQLite database instead of an in-memory list (BE-02 assignment).
+A CRUD API for managing a to-do list, built with Python + FastAPI, running in Docker with a real PostgreSQL database. The app and database start together with a single command: docker compose up.
 
-The API itself didn't change from Assignment 1, same endpoints, same request/response shapes, same status codes. Only the storage layer changed: tasks now live in tasks.db and survive server restarts.
+This builds directly on A2 (SQLite): the API — routes, validation, status codes, error format — has not changed at all. Only the storage layer underneath it was swapped, from SQLite to a Postgres repository, proving that "switch storage" really does mean changing one file, not rewriting the app.
 
-# Why SQLite
 
-SQLite was chosen because it needs no separate database server or installation — it's just a single file on disk (tasks.db) that Python's built-in sqlite3 module reads and writes directly. No setup step for anyone cloning the repo, but it still behaves like a real relational database instead of a temporary in-memory list.
+## Architecture
 
-# Where the database file is stored
+• `main.py` — FastAPI routes, request validation, error handling. **No SQL lives here.**
 
-tasks.db is created automatically in the project's root folder, next to main.py, the first time the server starts. It is not committed to git — each clone of this repo generates its own fresh database on first run.
+• `repository.py` — the only file that talks to the database (Postgres, via `psycopg2`). Every function takes and returns plain Python values, so `main.py` has no idea what database is behind it.
 
-## How to run it
+• `db.py` — opens a Postgres connection using `DATABASE_URL` from the environment.
 
-```bash
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+• `init.sql` — creates the `tasks` table and seeds 3 example rows. Runs automatically the first time the Postgres container starts with an empty volume.
 
-uvicorn main:app --reload --port 8000
-```
-Then open:
-- http://localhost:8000 — API info
-- http://localhost:8000/docs — Swagger UI (interactive docs, built in with FastAPI)
+• `Dockerfile` — builds the FastAPI app into a container image.
 
-On first run, tasks.db is created automatically with a tasks table and 3 seeded example tasks. On every later run, the existing data is reused, the 3 examples are only inserted once, when the table is empty.
+• `docker-compose.yml` — starts the `app` and `db` containers together, networked so the app can reach Postgres by service name.
 
+
+
+# How to run it
+bash
+cp .env.example .env
+docker compose up
+
+# Then open:
+
+http://localhost:8000 — API info
+http://localhost:8000/docs — Swagger UI
+
+This single command starts both containers: db (Postgres, with a named volume so data persists) and app (this API). The app waits for Postgres to report healthy before it starts.
+
+To stop everything: docker compose down. This removes the containers but not the volume — your data survives. Only docker compose down -v wipes the volume too.
+
+# Environment variables
+
+The connection string lives in .env, which is gitignored and never committed — it's the kind of file that can end up holding real credentials. A committed .env.example documents what's needed instead:
+
+DATABASE_URL=postgresql://taskuser:taskpass@db:5432/taskdb
+
+Inside Docker Compose, the app reaches Postgres via the service name db — Compose creates an internal network where db resolves to the Postgres container. This is different from running things locally, where you'd use localhost.
+
+## Database setup
+
+Postgres runs in Docker with a named volume (pgdata) mounted at /var/lib/postgresql/data. This is what makes data outlive the container itself — removing or rebuilding the db container doesn't touch the volume.
+
+The tasks table is created by init.sql, mounted into Postgres's docker-entrypoint-initdb.d/ folder. The official Postgres image only runs scripts in that folder once — the very first time the container starts with an empty volume — which is also what guarantees the 3 example tasks are seeded exactly once, never duplicated on later restarts.
 
 ## Endpoints
 
-| Method | Path | Description | Success | Errors |
-|--------|------|-------------|:-------:|--------|
-| GET | `/` | API info | 200 | — |
-| GET | `/health` | Health check | 200 | — |
-| GET | `/tasks` | List all tasks | 200 | — |
-| GET | `/tasks/{id}` | Get one task | 200 | 404 unknown id |
-| POST | `/tasks` | Create a task (`{"title": "..."}`) | 201 | 400 missing/empty title |
-| PUT | `/tasks/{id}` | Replace a task's title and `done` status | 200 | 400 invalid body, 404 unknown id |
-| DELETE | `/tasks/{id}` | Delete a task | 204 | 404 unknown id |
+| Method | Path        | Description                 | Success | Errors                           |
+| ------ | ----------- | --------------------------- | ------- | -------------------------------- |
+| GET    | /           | API info                    | 200     | —                                |
+| GET    | /health     | Health check                | 200     | —                                |
+| GET    | /tasks      | List all tasks              | 200     | —                                |
+| GET    | /tasks/{id} | Get one task                | 200     | 404 unknown id                   |
+| POST   | /tasks      | Create a task               | 201     | 400 missing/empty title          |
+| PUT    | /tasks/{id} | Replace a task's title/done | 200     | 400 invalid body, 404 unknown id |
+| DELETE | /tasks/{id} | Delete a task               | 204     | 404 unknown id                   |
 
 
-# Persistence proof
-Create a task via POST /tasks.
-Stop the server (Ctrl+C).
-Start it again: uvicorn main:app --reload --port 8000.
-GET /tasks — the task is still there.
+# What changed vs. what didn't (the actual point of this assignment)
 
-Unlike Assignment 1's in-memory list, restarting the server no longer wipes the data.
+# Changed:
 
-# One example SQL query I ran
+repository.py — rewritten from SQLite (sqlite3) to Postgres (psycopg2)
+db.py — new file, opens a Postgres connection instead of a SQLite file
+init.sql — new, Postgres-flavored table creation + seed script
+requirements.txt — added psycopg2-binary, python-dotenv
+New: Dockerfile, docker-compose.yml, .env, .env.example
 
-Opened tasks.db in DB Browser for SQLite and ran:
+# Did not change, at all:
 
-SELECT * FROM tasks WHERE done = 1;
+main.py — every route, every status code, both exception handlers
+The TaskCreate / TaskUpdate Pydantic models and validation rules
+The {"error": "..."} error response shape
+The API's external behavior — a client sending requests can't tell the difference
 
-![Database Query Screenshot](db-query.png)
+## Persistence proof
 
+How I checked, exactly:
 
-This returned only the completed task ("Push to GitHub"), confirming the done column correctly filters completed vs. open tasks.
+1. docker compose up - stack starts, 3 example tasks visible at GET /tasks
+2. Created a new task: POST /tasks with {"title": "Learn Docker"} → returned 201 with id: 4
+3. docker compose down — stops and removes both containers
+4. docker compose up — stack starts fresh from the existing volume
+5. GET /tasks — all 4 tasks still present, including "Learn Docker"
 
-# Database viewer screenshots
-
-All tasks, including ones created through the API:
-
-Query filtering for completed tasks only:
-
-![Database Browser Screenshot](db-browser-screenshot.png)
-
-## Swagger UI
-
-Full endpoint overview:
-![Swagger UI overview](swagger-overview.png)
-
-Example of a live request/response via "Try it out":
-![Swagger UI CRUD example](swagger-execute.png)
-![Swagger UI CRUD example](swagger-execute1.png)
-
-
-# What I noticed
-
-Restarting the server no longer resets my tasks back to just the 3 originals, the database only seeds those 3 tasks the very first time the table is empty. After that, whatever I create or delete stays that way across restarts, which is the whole point of this assignment: the API stayed identical, but swapping the storage layer to SQLite gave it real persistence.
+This confirms persistence across a full app + container restart, not just an app-level restart like the SQLite version proved. The data survives because it lives in the named volume pgdata, which exists independently of the containers — deleting and recreating the containers never touches it.
